@@ -123,5 +123,6 @@ module_init(proxy_init);
 module_exit(proxy_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("OpenAI");
+MODULE_AUTHOR("MirageInfinite-John Jackson");
+MODULE_VERSION("0.1");
 MODULE_DESCRIPTION("UIO proxy driver named MockHwUioProxyDriver");
