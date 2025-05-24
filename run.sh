@@ -1,67 +1,72 @@
 #!/bin/bash
 set -e
 
-ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# --- Configuration ---
+SESSION_NAME="MockHwUIO"
+ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 OUTPUT_DIR="$ROOT_DIR/output"
-MODULE_NAME="MockHwUioProxyDriver"
-KO_PATH="$OUTPUT_DIR/${MODULE_NAME}.ko"
 INSTALL_SCRIPT="$OUTPUT_DIR/install_driver.sh"
+KO_PATH="$OUTPUT_DIR/MockHwUioProxyDriver.ko"
 APP_A="$OUTPUT_DIR/ExampleApp"
 APP_B="$OUTPUT_DIR/MockHWEmulator"
+MODULE_NAME="MockHwUioProxyDriver"
 
-echo "[*] Attempting to unload old kernel module if loaded..."
+# --- Load Kernel Module Dependencies ---
+echo "[*] Loading required kernel modules..."
+sudo modprobe uio
+sudo modprobe uio_pdrv_genirq
 
-# Kill any users of /dev/uio* to safely remove the module
+# --- Unload Old Module Safely ---
+echo "[*] Unloading old kernel module if loaded..."
 sudo fuser -km /dev/uio* 2>/dev/null || true
 
-# Try unloading the module, retrying if still in use
 for i in {1..10}; do
     if ! lsmod | grep -q "$MODULE_NAME"; then
         break
     fi
-
     if sudo rmmod "$MODULE_NAME"; then
         echo "[*] Module $MODULE_NAME removed."
         break
     fi
-
     echo "[!] Module still in use. Retrying ($i)..."
     sleep 0.5
 done
 
 if lsmod | grep -q "$MODULE_NAME"; then
-    echo "❌ Could not unload $MODULE_NAME. It may still be in use."
-else
-    echo "[✓] Module $MODULE_NAME unloaded successfully."
+    echo "❌ Could not remove $MODULE_NAME. It may still be in use."
+    exit 1
 fi
 
-echo "[*] Installing kernel module using $INSTALL_SCRIPT..."
+# --- Install Kernel Driver ---
+echo "[*] Installing driver using $INSTALL_SCRIPT..."
+if [ ! -f "$INSTALL_SCRIPT" ]; then
+    echo "❌ install_driver.sh not found at: $INSTALL_SCRIPT"
+    exit 1
+fi
+
 bash "$INSTALL_SCRIPT"
+echo "[✓] Driver installed successfully."
 sleep 1
 
-# Launch helper
-launch_terminal() {
-    local cmd="$1"
-    local title="$2"
+# --- Launch Apps in tmux ---
+echo "[*] Launching apps in tmux session: $SESSION_NAME"
 
-    if command -v gnome-terminal &>/dev/null; then
-        gnome-terminal --title="$title" -- bash -c "$cmd; echo; read -p 'Press Enter to close...'"
-    elif command -v konsole &>/dev/null; then
-        konsole --new-tab -p tabtitle="$title" -e bash -c "$cmd; echo; read -p 'Press Enter to close...'"
-    elif command -v xfce4-terminal &>/dev/null; then
-        xfce4-terminal --title="$title" -e "bash -c '$cmd; echo; read -p Press Enter to close...'"
-    elif command -v xterm &>/dev/null; then
-        xterm -T "$title" -e "$cmd; echo; read -p 'Press Enter to close...'" &
-    else
-        echo "[!] No supported terminal found. Running $title in background..."
-        bash -c "$cmd" &
-    fi
-}
+# Kill session if it already exists
+tmux has-session -t "$SESSION_NAME" 2>/dev/null && tmux kill-session -t "$SESSION_NAME"
 
-echo "[*] Launching ExampleApp..."
-launch_terminal "$APP_A" "ExampleApp"
+# Launch ExampleApp with hold
+tmux new-session -d -s "$SESSION_NAME" -n "ExampleApp" \
+    "bash -c '$APP_A; echo; echo \"[ExampleApp exited] Press Enter to close...\"; read'"
 
-echo "[*] Launching MockHWEmulator..."
-launch_terminal "$APP_B" "MockHWEmulator"
+# Launch MockHWEmulator with hold
+tmux new-window -t "$SESSION_NAME:" -n "MockHWEmulator" \
+    "bash -c '$APP_B; echo; echo \"[MockHWEmulator exited] Press Enter to close...\"; read'"
 
-echo "[✓] All components launched."
+echo
+echo "[✓] tmux session '$SESSION_NAME' created with:"
+echo "    - Window 0: ExampleApp"
+echo "    - Window 1: MockHWEmulator"
+echo
+echo "▶ Attach with:   tmux attach-session -t $SESSION_NAME"
+echo "▶ Switch:        Ctrl+b then n or p"
+echo "▶ Detach:        Ctrl+b then d"
