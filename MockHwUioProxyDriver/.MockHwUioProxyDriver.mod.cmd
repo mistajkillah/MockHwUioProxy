@@ -1,0 +1,1 @@
+savedcmd_/home/john/workspace/ricardo/MockHwUioProxy/MockHwUioProxyDriver/MockHwUioProxyDriver.mod := printf '%s\n'   MockHwUioProxyDriver.o | awk '!x[$$0]++ { print("/home/john/workspace/ricardo/MockHwUioProxy/MockHwUioProxyDriver/"$$0) }' > /home/john/workspace/ricardo/MockHwUioProxy/MockHwUioProxyDriver/MockHwUioProxyDriver.mod

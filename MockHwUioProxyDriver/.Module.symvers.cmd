@@ -1,0 +1,1 @@
+savedcmd_/home/john/workspace/ricardo/MockHwUioProxy/MockHwUioProxyDriver/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/john/workspace/ricardo/MockHwUioProxy/MockHwUioProxyDriver/Module.symvers -T /home/john/workspace/ricardo/MockHwUioProxy/MockHwUioProxyDriver/modules.order -i Module.symvers -e 
