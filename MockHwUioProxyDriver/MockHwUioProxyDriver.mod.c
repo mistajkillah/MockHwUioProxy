@@ -36,7 +36,9 @@ MODULE_INFO(retpoline, "Y");
 static const struct modversion_info ____versions[]
 __used __section("__versions") = {
 	{ 0x656e4a6e, "snprintf" },
+	{ 0x7cd8d75e, "page_offset_base" },
 	{ 0x4267ef06, "__uio_register_device" },
+	{ 0x4c9d28b0, "phys_base" },
 	{ 0x3d8ee50d, "platform_driver_unregister" },
 	{ 0xf07d9d2a, "platform_device_unregister" },
 	{ 0x37a0cba, "kfree" },
@@ -57,4 +59,4 @@ __used __section("__versions") = {
 MODULE_INFO(depends, "uio");
 
 
-MODULE_INFO(srcversion, "1A8A6BEA2B36CD6BB924723");
+MODULE_INFO(srcversion, "F3A6B23D188C6F73F18E7E6");

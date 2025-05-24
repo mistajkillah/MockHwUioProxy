@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-# Resolve base path
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 OUTPUT_DIR="$ROOT_DIR/output"
 MODULE_NAME="MockHwUioProxyDriver"
@@ -10,52 +9,59 @@ INSTALL_SCRIPT="$OUTPUT_DIR/install_driver.sh"
 APP_A="$OUTPUT_DIR/ExampleApp"
 APP_B="$OUTPUT_DIR/MockHWEmulator"
 
-# Step 1: Remove old kernel module
-echo "[*] Unloading old kernel module if loaded..."
-if lsmod | grep -q "$MODULE_NAME"; then
-    sudo rmmod "$MODULE_NAME"
-    sleep 1
-fi
+echo "[*] Attempting to unload old kernel module if loaded..."
 
-# Step 2: Install the kernel module
-if [[ ! -f "$KO_PATH" || ! -f "$INSTALL_SCRIPT" ]]; then
-    echo "❌ Kernel module or install script missing in $OUTPUT_DIR. Run 'make' first."
-    exit 1
+# Kill any users of /dev/uio* to safely remove the module
+sudo fuser -km /dev/uio* 2>/dev/null || true
+
+# Try unloading the module, retrying if still in use
+for i in {1..10}; do
+    if ! lsmod | grep -q "$MODULE_NAME"; then
+        break
+    fi
+
+    if sudo rmmod "$MODULE_NAME"; then
+        echo "[*] Module $MODULE_NAME removed."
+        break
+    fi
+
+    echo "[!] Module still in use. Retrying ($i)..."
+    sleep 0.5
+done
+
+if lsmod | grep -q "$MODULE_NAME"; then
+    echo "❌ Could not unload $MODULE_NAME. It may still be in use."
+else
+    echo "[✓] Module $MODULE_NAME unloaded successfully."
 fi
 
 echo "[*] Installing kernel module using $INSTALL_SCRIPT..."
 bash "$INSTALL_SCRIPT"
 sleep 1
 
-# Function to launch a command in a new terminal window
+# Launch helper
 launch_terminal() {
     local cmd="$1"
     local title="$2"
 
     if command -v gnome-terminal &>/dev/null; then
-        gnome-terminal --title="$title" -- bash -c "$cmd; echo; read -p 'Press Enter to exit...'"
+        gnome-terminal --title="$title" -- bash -c "$cmd; echo; read -p 'Press Enter to close...'"
     elif command -v konsole &>/dev/null; then
-        konsole --new-tab -p tabtitle="$title" -e bash -c "$cmd; echo; read -p 'Press Enter to exit...'"
+        konsole --new-tab -p tabtitle="$title" -e bash -c "$cmd; echo; read -p 'Press Enter to close...'"
     elif command -v xfce4-terminal &>/dev/null; then
-        xfce4-terminal --title="$title" -e "bash -c '$cmd; echo; read -p Press Enter to exit...'"
+        xfce4-terminal --title="$title" -e "bash -c '$cmd; echo; read -p Press Enter to close...'"
     elif command -v xterm &>/dev/null; then
-        xterm -T "$title" -e "$cmd; echo; read -p 'Press Enter to exit...'"
+        xterm -T "$title" -e "$cmd; echo; read -p 'Press Enter to close...'" &
     else
         echo "[!] No supported terminal found. Running $title in background..."
         bash -c "$cmd" &
     fi
 }
 
-# Step 3: Launch applications
-if [[ -x "$APP_A" && -x "$APP_B" ]]; then
-    echo "[*] Launching ExampleApp..."
-    launch_terminal "$APP_A" "ExampleApp"
+echo "[*] Launching ExampleApp..."
+launch_terminal "$APP_A" "ExampleApp"
 
-    echo "[*] Launching MockHWEmulator..."
-    launch_terminal "$APP_B" "MockHWEmulator"
-else
-    echo "❌ Compiled applications not found. Please run 'make' first."
-    exit 1
-fi
+echo "[*] Launching MockHWEmulator..."
+launch_terminal "$APP_B" "MockHWEmulator"
 
-echo "[✓] Everything launched."
+echo "[✓] All components launched."

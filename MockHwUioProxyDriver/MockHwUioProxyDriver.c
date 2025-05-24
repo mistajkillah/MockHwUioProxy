@@ -3,6 +3,8 @@
 #include <linux/uio_driver.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
+#include <linux/io.h>       // for virt_to_phys()
+#include <linux/string.h>   // for memset()
 
 #define DRIVER_NAME "MockHwUioProxyDriver"
 #define NUM_DEVICES 2
@@ -32,11 +34,13 @@ static int proxy_probe(struct platform_device *pdev)
     int id = pdev->id;
     struct proxy_uio_dev *dev = &uio_devs[id];
 
+    // ✅ Initialize entire uio_info to zero to avoid NULL dereference
+    memset(&dev->uio, 0, sizeof(dev->uio));
     dev->id = id;
 
-    snprintf((char *)dev->uio.name, UIO_MAX_NAME_SIZE, "MockHwProxyUIO%d", id);
+    snprintf(dev->uio.name, UIO_MAX_NAME_SIZE, "MockHwProxyUIO%d", id);
     dev->uio.version = "0.1";
-    dev->uio.mem[0].addr = (phys_addr_t)shared_buffer;
+    dev->uio.mem[0].addr = virt_to_phys(shared_buffer);
     dev->uio.mem[0].memtype = UIO_MEM_LOGICAL;
     dev->uio.mem[0].size = sizeof(struct shared_mem);
 
