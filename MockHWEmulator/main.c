@@ -1,28 +1,42 @@
-
 #include <stdio.h>
-#include <stdlib.h>
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <unistd.h>
+#include <string.h>
+#include <sys/mman.h>
 
-#define SHARED_MEM_SIZE 4096
+#define DEVICE "/dev/uio1"
+#define SIZE 4096
+
+struct message_buf {
+    volatile int ready;
+    char data[SIZE - sizeof(int)];
+};
 
 int main() {
-    int fd = open("/dev/uio1", O_RDONLY);
+    int fd = open(DEVICE, O_RDWR);
     if (fd < 0) {
-        perror("open /dev/uio1");
+        perror("Failed to open " DEVICE);
         return 1;
     }
 
-    char *shared = mmap(NULL, SHARED_MEM_SIZE, PROT_READ, MAP_SHARED, fd, 0);
-    if (shared == MAP_FAILED) {
+    struct message_buf *buf = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (buf == MAP_FAILED) {
         perror("mmap");
+        close(fd);
         return 1;
     }
 
-    printf("MockHWEmulator read from shared memory: %s\n", shared);
+    printf("[MockHWEmulator] Waiting for messages...\n");
 
-    munmap(shared, SHARED_MEM_SIZE);
+    while (1) {
+        if (buf->ready == 1) {
+            printf("[MockHWEmulator] Received: %s\n", buf->data);
+            buf->ready = 0;
+        }
+        usleep(500000);  // 0.5s delay
+    }
+
+    munmap(buf, SIZE);
     close(fd);
     return 0;
 }

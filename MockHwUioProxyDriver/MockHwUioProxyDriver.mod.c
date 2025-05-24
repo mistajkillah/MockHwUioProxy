@@ -35,30 +35,27 @@ MODULE_INFO(retpoline, "Y");
 
 static const struct modversion_info ____versions[]
 __used __section("__versions") = {
+	{ 0x5b8239ca, "__x86_return_thunk" },
 	{ 0x87a21cb3, "__ubsan_handle_out_of_bounds" },
-	{ 0x656e4a6e, "snprintf" },
-	{ 0x7cd8d75e, "page_offset_base" },
+	{ 0xfb384d37, "kasprintf" },
 	{ 0x4267ef06, "__uio_register_device" },
-	{ 0x4c9d28b0, "phys_base" },
-	{ 0xcbd4898c, "fortify_panic" },
-	{ 0x3d8ee50d, "platform_driver_unregister" },
-	{ 0xf07d9d2a, "platform_device_unregister" },
-	{ 0x37a0cba, "kfree" },
-	{ 0x4c03a563, "random_kmalloc_seed" },
-	{ 0xa63b4eed, "kmalloc_caches" },
-	{ 0x59ffeca6, "kmalloc_trace" },
+	{ 0xf7d0bcb, "dma_alloc_attrs" },
 	{ 0xcefb0c9f, "__mutex_init" },
-	{ 0x5302e052, "platform_device_register_full" },
+	{ 0xcbd4898c, "fortify_panic" },
+	{ 0xf07d9d2a, "platform_device_unregister" },
+	{ 0x3d8ee50d, "platform_driver_unregister" },
+	{ 0xf18befa3, "dma_free_attrs" },
 	{ 0xe4cfdada, "__platform_driver_register" },
+	{ 0x5302e052, "platform_device_register_full" },
 	{ 0xf0fdf6cb, "__stack_chk_fail" },
 	{ 0xbdfb6dbb, "__fentry__" },
 	{ 0x122c3a7e, "_printk" },
 	{ 0x22bb28ea, "uio_unregister_device" },
-	{ 0x5b8239ca, "__x86_return_thunk" },
+	{ 0x37a0cba, "kfree" },
 	{ 0xf079b8f9, "module_layout" },
 };
 
 MODULE_INFO(depends, "uio");
 
 
-MODULE_INFO(srcversion, "0D05D127499D703D719230F");
+MODULE_INFO(srcversion, "FEAB612AD32880C1DD899F8");
